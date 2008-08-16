@@ -1,5 +1,6 @@
 module Main where
 
+import Algorithms.MachineLearning.BasisFunctions
 import Algorithms.MachineLearning.Framework
 import Algorithms.MachineLearning.LinearAlgebra
 import Algorithms.MachineLearning.LinearRegression
@@ -9,9 +10,6 @@ import Algorithms.MachineLearning.Utilities
 import GNUPlot
 import System.Cmd
 
-
-normalGaussianBasis :: Double -> Double -> Double -> Double
-normalGaussianBasis mean scale x = exp (negate $ (square (x - mean)) / (2 * (square scale)))
 
 basisFunctions :: [Double -> Double]
 basisFunctions = const 1 : map (\mean -> normalGaussianBasis (rationalToDouble mean) 0.2) [-1,-0.9..1]

@@ -60,9 +60,9 @@ regressLinearModelCore find_pinv basis_fns ds
     weights = find_pinv designMatrix <> (ds_targets ds)
 
 
--- | Bayesian linear regression, using a Gaussian prior for the weights centred at the origin.  The precision of the
--- weight prior is controlled by the parameter alpha, and our belief about the inherent noise in the data is controlled
--- by the precision parameter beta.
+-- | Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the origin.  The precision
+-- of the weight prior is controlled by the parameter alpha, and our belief about the inherent noise in the data is
+-- controlled by the precision parameter beta.
 --
 -- Bayesion linear regression with this prior is entirely equivalent to calling 'regressRegularizedLinearModel' with
 -- lambda = alpha / beta.

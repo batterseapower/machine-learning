@@ -20,10 +20,21 @@ Flag SplitBase
         Default:        True
 
 
---Library
---        Exposed-Modules:        Algorithms.MachineLearning.LinearRegression
-Executable machine-learning
-        Main-Is:                Algorithms/MachineLearning/LinearRegression.hs
+Library
+        Exposed-Modules:        Algorithms.MachineLearning.Framework
+                                Algorithms.MachineLearning.LinearRegression
+
+        Build-Depends:          hmatrix >= 0.4.0.0, HTam
+        if flag(splitBase)
+                Build-Depends:  base >= 3
+        else
+                Build-Depends:  base < 3
+        
+        Extensions:             PatternSignatures, RecordPuns
+        Ghc-Options:            -O2 -fvia-C -Wall
+
+Executable machine-learning-tests
+        Main-Is:                Algorithms/MachineLearning/Tests/Driver.hs
         
         Build-Depends:          hmatrix >= 0.4.0.0, HTam
         if flag(splitBase)
@@ -31,22 +42,8 @@ Executable machine-learning
         else
                 Build-Depends:  base < 3
         
-        Extensions:             PatternGuards
+        Extensions:             PatternSignatures, RecordPuns
         Ghc-Options:            -O2 -fvia-C -Wall
-
---Executable edit-distance-tests
---        Main-Is:                Text/EditDistance/Tests.hs
---        if flag(splitBase)
---                Build-Depends:  base >= 3, array >= 0.1, random >= 1.0,
---                                QuickCheck >= 1.1
---        else
---                Build-Depends:  base < 3, 
---                                QuickCheck >= 1.1
---        
---        Extensions:             PatternGuards, PatternSignatures, 
---                                RankNTypes, ExistentialQuantification,
---                                ScopedTypeVariables
---        Ghc-Options:            -O2 -fvia-C -Wall -fno-warn-orphans
---        
---        if !flag(tests)
---                Buildable:      False
+        
+        if !flag(tests)
+                Buildable:      False

@@ -32,7 +32,7 @@ evaluate model true_data = do
     fittedFunction = predict model
     comparable_data = map (fittedFunction `onLeft`) (dataSetToSampleList true_data)
 
-plot :: [(Double, Double)] -> [(Double, Double)] -> IO ()
+plot :: [(Double, Target)] -> [(Double, Target)] -> IO ()
 plot true_samples fitted_samples = do
     plotPaths [EPS "output.ps"] [true_samples, fitted_samples]
     void $ rawSystem "open" ["output.ps"]

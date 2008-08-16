@@ -7,8 +7,8 @@ import Algorithms.MachineLearning.LinearAlgebra
 
 
 data LinearModel input = LinearModel {
-        lm_basis_fns :: [input -> Double],
-        lm_weights   :: Vector Double
+        lm_basis_fns :: [input -> Target],
+        lm_weights   :: Vector Weight
     }
 
 instance Show (LinearModel input) where
@@ -19,7 +19,7 @@ instance Model LinearModel where
       where
         phi_app_x = applyVector (lm_basis_fns model) input
 
-regressLinearModel :: (Vectorable input) => [input -> Double] -> DataSet input -> LinearModel input
+regressLinearModel :: (Vectorable input) => [input -> Target] -> DataSet input -> LinearModel input
 regressLinearModel basis_fns ds
   = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
   where

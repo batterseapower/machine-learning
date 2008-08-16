@@ -6,6 +6,14 @@ import Numeric.LinearAlgebra
 
 
 --
+-- Ubiquitous synonyms for documentation purposes
+--
+
+type Target = Double
+type Weight = Double
+
+
+--
 -- Injections to and from vectors
 --
 class Vectorable a where
@@ -30,17 +38,17 @@ instance Vectorable (Vector Double) where
 
 data DataSet input = DataSet {
         ds_inputs :: Matrix Double, -- One row per sample, one column per input variable
-        ds_targets :: Vector Double -- One row per sample, each value being a single target variable
+        ds_targets :: Vector Target -- One row per sample, each value being a single target variable
     }
 
-dataSetFromSampleList :: Vectorable a => [(a, Double)] -> DataSet a
+dataSetFromSampleList :: Vectorable a => [(a, Target)] -> DataSet a
 dataSetFromSampleList elts
   = DataSet {
     ds_inputs = fromRows $ map (toVector . fst) elts,
     ds_targets = fromList $ map snd elts
   }
 
-dataSetToSampleList :: Vectorable a => DataSet a -> [(a, Double)]
+dataSetToSampleList :: Vectorable a => DataSet a -> [(a, Target)]
 dataSetToSampleList ds = zip (map fromVector $ toRows $ ds_inputs ds) (toList $ ds_targets ds)
 
 --
@@ -48,4 +56,4 @@ dataSetToSampleList ds = zip (map fromVector $ toRows $ ds_inputs ds) (toList $ 
 --
 
 class Model model where
-    predict :: Vectorable input => model input -> input -> Double
+    predict :: Vectorable input => model input -> input -> Target

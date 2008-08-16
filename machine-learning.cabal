@@ -4,7 +4,8 @@ Cabal-Version:  >= 1.2
 Category:       Algorithms
 Synopsis:       Machine learning algorithms
 Description:    Algorithms for machine learning and pattern recognition, based on the book "Pattern Recognition and Machine Learning" by Christopher Bishop
-License:        BSD3
+-- Because of HMatrix and HTam, I have to release this package under GPL
+License:        GPL
 License-File:   LICENSE
 Author:         Max Bolingbroke
 Maintainer:     batterseapower@hotmail.com

@@ -1,0 +1,6 @@
+# Cabal temporary stuff
+dist/
+
+# Output from running the executable
+*.dat
+*.ps

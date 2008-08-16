@@ -14,6 +14,12 @@ import Numeric.LinearAlgebra
 type Target = Double
 type Weight = Double
 
+-- | A positive constant indicating how strongly regularization should be applied. A good
+-- choice for this parameter might be your belief about the variance of the inherent noise
+-- in the samples (1/beta) divided by your belief about the variance of the weights that
+-- should be learnt by the model (1/alpha).
+--
+-- See also equation 3.55 and 3.28 in Bishop.
 type RegularizationCoefficient = Double
 
 --

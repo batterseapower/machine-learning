@@ -2,7 +2,7 @@
 
 -- | Linear regression models, as discussed in chapter 3 of Bishop.
 module Algorithms.MachineLearning.LinearRegression (
-        LinearModel, regressLinearModel
+        LinearModel, regressLinearModel, regressRegularizedLinearModel
     ) where
 
 import Algorithms.MachineLearning.Framework
@@ -33,6 +33,18 @@ instance Model LinearModel where
 -- is also very quick to find, since there is a closed form solution.
 regressLinearModel :: (Vectorable input) => [input -> Target] -> DataSet input -> LinearModel input
 regressLinearModel = regressLinearModelCore pinv
+
+-- | Regress a basic linear model with a sum-of-squares regularization term.  This penalizes models with weight
+-- vectors of large magnitudes and hence ameliorates the over-fitting problem of 'regressLinearModel'.
+-- The strength of the regularization is controlled by the lambda parameter.
+--
+-- The resulting model will be optimal in terms of least-squares penalized by lambda times the sum-of-squares of
+-- the weight vector.  Like 'regressLinearModel', a closed form solution is used to find the model quickly.
+regressRegularizedLinearModel :: (Vectorable input) => RegularizationCoefficient -> [input -> Target] -> DataSet input -> LinearModel input
+regressRegularizedLinearModel lambda = regressLinearModelCore regularizedPinv
+  where
+    regularizedPinv phi = let trans_phi = trans phi
+                          in inv ((lambda .* (ident (cols phi))) + (trans_phi <> phi)) <> trans_phi
 
 regressLinearModelCore :: (Vectorable input) => (Matrix Double -> Matrix Double) -> [input -> Target] -> DataSet input -> LinearModel input
 regressLinearModelCore find_pinv basis_fns ds

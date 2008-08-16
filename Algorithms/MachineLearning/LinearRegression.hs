@@ -2,7 +2,8 @@
 
 -- | Linear regression models, as discussed in chapter 3 of Bishop.
 module Algorithms.MachineLearning.LinearRegression (
-        LinearModel, regressLinearModel, regressRegularizedLinearModel
+        LinearModel,
+        regressLinearModel, regressRegularizedLinearModel, bayesianLinearRegression
     ) where
 
 import Algorithms.MachineLearning.Framework
@@ -57,3 +58,18 @@ regressLinearModelCore find_pinv basis_fns ds
   where
     designMatrix = applyMatrix (map (. fromVector) basis_fns) (ds_inputs ds) -- One row per sample, one column per basis function
     weights = find_pinv designMatrix <> (ds_targets ds)
+
+
+-- | Bayesian linear regression, using a Gaussian prior for the weights centred at the origin.  The precision of the
+-- weight prior is controlled by the parameter alpha, and our belief about the inherent noise in the data is controlled
+-- by the precision parameter beta.
+--
+-- Bayesion linear regression with this prior is entirely equivalent to calling 'regressRegularizedLinearModel' with
+-- lambda = alpha / beta.
+--
+-- Equation 3.55 in Bishop.
+bayesianLinearRegression :: (Vectorable input) 
+                         => Precision -- ^ Precision of Gaussian weight prior
+                         -> Precision -- ^ Precision of noise on samples
+                         -> [input -> Target] -> DataSet input -> LinearModel input
+bayesianLinearRegression alpha beta = regressRegularizedLinearModel (alpha / beta)

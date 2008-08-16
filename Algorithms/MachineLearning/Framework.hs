@@ -14,6 +14,15 @@ import Numeric.LinearAlgebra
 type Target = Double
 type Weight = Double
 
+-- | Commonly called the "average" of a set of data.
+type Mean = Double
+
+-- | Variance is the mean squared deviation from the mean.
+type Variance = Double
+
+-- | Precision is the inverse of variance.
+type Precision = Double
+
 -- | A positive constant indicating how strongly regularization should be applied. A good
 -- choice for this parameter might be your belief about the variance of the inherent noise
 -- in the samples (1/beta) divided by your belief about the variance of the weights that
@@ -21,6 +30,7 @@ type Weight = Double
 --
 -- See also equation 3.55 and 3.28 in Bishop.
 type RegularizationCoefficient = Double
+
 
 --
 -- Injections to and from vectors

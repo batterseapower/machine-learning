@@ -37,6 +37,8 @@ Library
 Executable machine-learning-tests
         Main-Is:                Algorithms/MachineLearning/Tests/Driver.hs
         
+        -- I just need HTam for the GNUPlot module. Probably I should just write my
+        -- own GNUPlot interface module instead of depending on such a weird package :-)
         Build-Depends:          hmatrix >= 0.4.0.0, HTam
         if flag(splitBase)
                 Build-Depends:  base >= 3, process >= 1.0.0.0

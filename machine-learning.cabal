@@ -9,6 +9,7 @@ License:        GPL
 License-File:   LICENSE
 Author:         Max Bolingbroke
 Maintainer:     batterseapower@hotmail.com
+Homepage:       http://bsp.lighthouseapp.com/projects/15641-hs-machine-learning/overview
 Build-Type:     Simple
 
 Flag Tests

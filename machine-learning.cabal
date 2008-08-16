@@ -31,7 +31,7 @@ Library
         else
                 Build-Depends:  base < 3
         
-        Extensions:             PatternSignatures, RecordPuns
+        Extensions:             PatternSignatures
         Ghc-Options:            -O2 -fvia-C -Wall
 
 Executable machine-learning-tests
@@ -45,7 +45,7 @@ Executable machine-learning-tests
         else
                 Build-Depends:  base < 3
         
-        Extensions:             PatternSignatures, RecordPuns
+        Extensions:             PatternSignatures
         Ghc-Options:            -O2 -fvia-C -Wall
         
         if !flag(tests)

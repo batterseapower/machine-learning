@@ -1,3 +1,5 @@
+-- | Linear algebra used in the machine learning library: just HMatrix re-exports and some
+-- other useful functions I have built up.
 module Algorithms.MachineLearning.LinearAlgebra (
         module Numeric.LinearAlgebra,
         module Algorithms.MachineLearning.LinearAlgebra
@@ -6,7 +8,7 @@ module Algorithms.MachineLearning.LinearAlgebra (
 import Numeric.LinearAlgebra
 
 
--- Given the input functions:
+-- | Given the input functions:
 --
 -- @[f_1, f_2, ..., f_n]@
 --
@@ -31,7 +33,7 @@ applyMatrix fns inputs = fromLists (map (\r -> map ($ r) fns) rs)
   where
     rs = toRows inputs
 
--- Given the input functions:
+-- | Given the input functions:
 --
 -- @[f_1, f_2, ..., f_n]@
 --
@@ -50,14 +52,18 @@ applyMatrix fns inputs = fromLists (map (\r -> map ($ r) fns) rs)
 applyVector :: [inputs -> Double] -> inputs -> Vector Double
 applyVector fns inputs = fromList $ map ($ inputs) fns
 
--- Summation of a vector
-vectorSum :: Vector Double -> Double
+-- | Summation of the elements in a vector.
+vectorSum :: Element a => Vector a -> a
 vectorSum v = constant 1 (dim v) <.> v
 
--- Vector mean
-vectorMean :: Vector Double -> Double
+-- | Mean of the elements in a vector.
+vectorMean :: Element a => Vector a -> a
 vectorMean v = (vectorSum v) / fromIntegral (dim v)
 
--- Column-wise summation of the matrix
-sumColumns :: Matrix Double -> Vector Double
+-- | Column-wise summation of a matrix.
+sumColumns :: Element a => Matrix a -> Vector a
 sumColumns m = constant 1 (rows m) <> m
+
+-- | Create a constant matrix of the given dimension, analagously to 'constant'.
+constantM :: Element a => a -> Int -> Int -> Matrix a
+constantM elt row_count col_count = reshape row_count (constant elt (row_count * col_count))

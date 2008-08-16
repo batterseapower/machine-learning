@@ -1,3 +1,5 @@
+-- | We commit the usual sin of lumping a load of useful functions with no clear
+-- home in a "utilities" module
 module Algorithms.MachineLearning.Utilities where
 
 square :: Num a => a -> a

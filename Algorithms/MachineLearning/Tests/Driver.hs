@@ -12,7 +12,7 @@ import System.Cmd
 
 
 basisFunctions :: [Double -> Double]
-basisFunctions = const 1 : map (\mean -> normalGaussianBasis (rationalToDouble mean) 0.2) [-1,-0.9..1]
+basisFunctions = const 1 : map (\mean -> gaussianBasis (rationalToDouble mean) 0.2) [-1,-0.9..1]
 
 sumOfSquaresError :: [(Double, Double)] -> Double
 sumOfSquaresError targetsAndPredictions = sum $ map (abs . uncurry (-)) targetsAndPredictions
@@ -36,4 +36,4 @@ plot true_samples fitted_samples = do
     void $ rawSystem "open" ["output.ps"]
 
 main :: IO ()
-main = evaluate (regressLinearModel basisFunctions sinDataSet) sinDataSet
+main = evaluate (regressRegularizedLinearModel 1 basisFunctions sinDataSet) sinDataSet

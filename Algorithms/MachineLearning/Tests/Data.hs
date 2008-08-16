@@ -1,10 +1,16 @@
+-- | Sample data sets, used to drive the machine learning library during development.
 module Algorithms.MachineLearning.Tests.Data where
 
 import Algorithms.MachineLearning.Framework
 
--- Description: Pairs (x,y) where:
---  x = U(0, 1)
---  y = sin(2πx) + N(0, 0.3)
+
+-- | Dataset of noisy samples from a sine function:
+--
+-- @
+--  input = U(0, 1)
+--  target = sin(2πx) + N(0, 0.3)
+-- @
+--
 -- Source: http://research.microsoft.com/~cmbishop/PRML/webdatasets/curvefitting.txt
 sinDataSet :: DataSet Double
 sinDataSet = dataSetFromSampleList [

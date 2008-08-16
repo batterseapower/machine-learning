@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
+-- | The "framework" provides all the core classes and types used ubiquitously by
+-- the machine learning algorithms.
 module Algorithms.MachineLearning.Framework where
 
 import Numeric.LinearAlgebra
@@ -12,6 +14,7 @@ import Numeric.LinearAlgebra
 type Target = Double
 type Weight = Double
 
+type RegularizationCoefficient = Double
 
 --
 -- Injections to and from vectors

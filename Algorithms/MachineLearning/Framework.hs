@@ -91,11 +91,20 @@ dataSetInputs ds = map fromVector $ toRows $ ds_inputs ds
 dataSetTargets :: DataSet -> [Target]
 dataSetTargets ds = toList $ ds_targets ds
 
-binDS :: StdGen -> Int -> DataSet -> [DataSet]
-binDS gen bins ds = map dataSetFromSampleList $ chunk (ceiling $ (fromIntegral $ length samples :: Double) / (fromIntegral bins)) shuffled_samples
+dataSetInputLength :: DataSet -> Int
+dataSetInputLength ds = cols (ds_inputs ds)
+
+dataSetSize :: DataSet -> Int
+dataSetSize ds = rows (ds_inputs ds)
+
+binDataSet :: StdGen -> Int -> DataSet -> [DataSet]
+binDataSet gen bins ds = map dataSetFromSampleList $ chunk bin_size shuffled_samples
   where
-    samples = zip (toRows $ ds_inputs ds) (toList $ ds_targets ds)
-    shuffled_samples = shuffle gen samples
+    shuffled_samples = shuffle gen (dataSetToSampleList ds :: [(Vector Double, Target)])
+    bin_size = ceiling $ (fromIntegral $ dataSetSize ds :: Double) / (fromIntegral bins)
+
+sampleDataSet :: StdGen -> Int -> DataSet -> DataSet
+sampleDataSet gen n ds = dataSetFromSampleList (sample gen n (dataSetToSampleList ds :: [(Vector Double, Target)]))
 
 --
 -- Models

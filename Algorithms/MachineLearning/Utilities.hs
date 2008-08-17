@@ -35,5 +35,8 @@ chunk n xs = this : chunk n rest
   where
     (this, rest) = splitAt n xs
 
+sample :: StdGen -> Int -> [a] -> [a]
+sample gen n xs = take n (shuffle gen xs)
+
 eqWithin :: Double -> Double -> Double -> Bool
 eqWithin jitter left right = abs (left - right) < jitter

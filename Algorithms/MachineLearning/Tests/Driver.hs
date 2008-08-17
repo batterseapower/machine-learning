@@ -22,8 +22,8 @@ basisFunctions = const 1 : map (\mean -> gaussianBasis (rationalToDouble mean) 0
 sumOfSquaresError :: [(Double, Double)] -> Double
 sumOfSquaresError targetsAndPredictions = sum $ map (abs . uncurry (-)) targetsAndPredictions
 
-sample :: (Double -> Double) -> [(Double, Double)]
-sample f = map (\(x :: Rational) -> let x' = rationalToDouble x in (x', f x')) [0,0.01..1.0]
+sampleFunction :: (Double -> Double) -> [(Double, Double)]
+sampleFunction f = map (\(x :: Rational) -> let x' = rationalToDouble x in (x', f x')) [0,0.01..1.0]
 
 evaluate :: (Model model, Show (model Double)) => model Double -> DataSet -> IO ()
 evaluate model true_data = do
@@ -42,7 +42,8 @@ plot sampless = do
 main :: IO ()
 main = do
     gen <- newStdGen
-    let used_data = head $ binDS gen 2 sinDataSet
+    let --used_data = sinDataSet
+        used_data = sampleDataSet gen 5 sinDataSet
         (model, variance_model, gamma) = regressEMBayesianLinearModel 5 (1 / 0.3) basisFunctions used_data
     
     -- Show some model statistics
@@ -50,4 +51,4 @@ main = do
     print $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
-    plot [dataSetToSampleList used_data, sample $ predict model, sample $ predict variance_model]
+    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ predict variance_model]

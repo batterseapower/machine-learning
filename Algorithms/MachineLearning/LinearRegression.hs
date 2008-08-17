@@ -139,7 +139,7 @@ regressEMBayesianLinearModel
 regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = loop initial_alpha initial_beta eps False
   where
-    n = fromIntegral $ rows (ds_inputs ds) -- Number of samples
+    n = fromIntegral $ dataSetSize ds
     
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
     (unscaled_eigenvalues, _) = eigSH (trans design_matrix <> design_matrix)
@@ -180,7 +180,7 @@ regressFullyDeterminedEMBayesianLinearModel
 regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = loop initial_alpha initial_beta eps False
   where
-    n = fromIntegral $ rows (ds_inputs ds) -- Number of samples
+    n = fromIntegral $ dataSetSize ds
     m = fromIntegral $ length basis_fns
     
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)

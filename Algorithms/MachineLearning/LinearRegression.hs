@@ -166,16 +166,17 @@ regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
 -- training data than there are basis functions you want to assign weights to.  Due to the introduction of this
 -- constraint, it is much faster than the other function and yet produces results of similar quality.
 --
--- Unlike with 'regressEMBayesianLinearModel', the effective number of parameters, gamma, used by the regressed model
--- is not returned because for this function to make sense you need to be sure that there is sufficient data that all
--- the parameters are determined, i.e. gamma = number of basis functions.
+-- Like with 'regressEMBayesianLinearModel', the effective number of parameters, gamma, used by the regressed model
+-- is returned. However, because for this function to make sense you need to be sure that there is sufficient data
+-- that all the parameters are determined, the returned gamma is always just the number of basis functions (and
+-- hence weights).
 --
 -- Equations 3.98 and 3.99 in Bishop.
 regressFullyDeterminedEMBayesianLinearModel
     :: (Vectorable input)
     => Precision -- ^ Initial estimate of Gaussian weight prior
     -> Precision -- ^ Initial estimate for precision of noise on samples
-    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
+    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = loop initial_alpha initial_beta eps False
   where
@@ -186,7 +187,7 @@ regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns
     
     -- I'm not very happy about all the duplicate code around here.. is there a better way, without too much extra ugliness?
     loop alpha beta threshold done
-      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta })
+      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, m)
       | otherwise = loop alpha' beta' (threshold * 2) (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
       where
         (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)

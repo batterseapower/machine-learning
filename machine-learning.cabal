@@ -22,8 +22,12 @@ Flag SplitBase
 
 
 Library
-        Exposed-Modules:        Algorithms.MachineLearning.Framework
+        Exposed-Modules:        Algorithms.MachineLearning.BasisFunctions
+                                Algorithms.MachineLearning.Framework
                                 Algorithms.MachineLearning.LinearRegression
+
+        Other-Modules:          Algorithms.MachineLearning.LinearAlgebra
+                                Algorithms.MachineLearning.Utilities
 
         Build-Depends:          hmatrix >= 0.4.0.0, random >= 1.0.0.0
         if flag(splitBase)

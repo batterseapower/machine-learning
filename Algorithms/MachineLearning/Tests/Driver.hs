@@ -17,7 +17,7 @@ import System.Random
 
 
 basisFunctions :: [Double -> Double]
-basisFunctions = const 1 : map (\mean -> gaussianBasis (rationalToDouble mean) 0.04) [-1,-0.9..1]
+basisFunctions = gaussianBasisFamily (map rationalToDouble [-1,-0.9..1]) 0.04
 
 sumOfSquaresError :: [(Double, Double)] -> Double
 sumOfSquaresError targetsAndPredictions = sum $ map (abs . uncurry (-)) targetsAndPredictions

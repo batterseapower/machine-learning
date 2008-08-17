@@ -17,7 +17,10 @@ import System.Random
 
 
 basisFunctions :: [Double -> Double]
-basisFunctions = gaussianBasisFamily (map rationalToDouble [-1,-0.9..1]) 0.04
+basisFunctions 
+  -- = [constantBasis]
+  = gaussianBasisFamily (map rationalToDouble [-1,-0.5..1]) 0.09
+  -- = gaussianBasisFamily (map rationalToDouble [-1,-0.9..1]) 0.04
 
 sumOfSquaresError :: [(Double, Double)] -> Double
 sumOfSquaresError targetsAndPredictions = sum $ map (abs . uncurry (-)) targetsAndPredictions
@@ -39,14 +42,15 @@ main :: IO ()
 main = do
     gen <- newStdGen
     let --used_data = sinDataSet
-        used_data = sampleDataSet gen 5 sinDataSet
-        (model, variance_model, gamma) = regressEMBayesianLinearModel 5 (1 / 0.3) basisFunctions used_data
+        used_data = sampleDataSet gen 10 sinDataSet
+        --(model, variance_model) = regressBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
+        (model, variance_model, gamma) = regressEMBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
     
     -- Show some model statistics
     evaluate model used_data
     putStrLn $ "Model For Target:\n" ++ show model
     putStrLn $ "Model For Variance:\n" ++ show variance_model
-    putStrLn $ "Gamma = " ++ show gamma
+    --putStrLn $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
-    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ predict variance_model]
+    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ (sqrt . predict variance_model)]

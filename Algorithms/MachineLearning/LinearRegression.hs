@@ -28,16 +28,16 @@ instance Model LinearModel where
 
 data BayesianVarianceModel input = BayesianVarianceModel {
         bvm_basis_fns :: [input -> Target],
-        bvm_weight_covariance :: Matrix Weight,
+        bvm_inv_hessian :: Matrix Weight, -- Equivalent to the weight distribution covariance matrix
         bvm_beta :: Precision
     }
 
 instance Show (BayesianVarianceModel input) where
-    show model = "Weight Covariance: " ++ show (bvm_weight_covariance model) ++ "\n" ++
+    show model = "Inverse Hessian: " ++ show (bvm_inv_hessian model) ++ "\n" ++
                  "Beta: " ++ show (bvm_beta model)
 
 instance Model BayesianVarianceModel where
-    predict model input = recip (bvm_beta model) + phi_app_x <.> (bvm_weight_covariance model <> phi_app_x)
+    predict model input = recip (bvm_beta model) + (phi_app_x <> bvm_inv_hessian model) <.> phi_app_x --phi_app_x <.> (bvm_inv_hessian model <> phi_app_x)
       where
         phi_app_x = applyVector (bvm_basis_fns model) input
 
@@ -91,12 +91,12 @@ regressRegularizedLinearModel lambda basis_fns ds = LinearModel { lm_basis_fns =
     weights = regularizedPinv lambda design_matrix <> ds_targets ds
 
 
--- | Determine the mean weight and weight covariance matrix given alpha, beta, the design matrix and the targets.
+-- | Determine the mean weight and inverse hessian matrix given alpha, beta, the design matrix and the targets.
 bayesianPosteriorParameters :: Precision -> Precision -> Matrix Double -> Vector Double -> (Vector Double, Matrix Double)
-bayesianPosteriorParameters alpha beta design_matrix targets = (weights, weight_covariance)
+bayesianPosteriorParameters alpha beta design_matrix targets = (weights, inv_hessian)
   where
-    weight_covariance = regularizedPrePinv alpha beta design_matrix
-    weights = beta .* weight_covariance <> trans design_matrix <> targets
+    inv_hessian = regularizedPrePinv alpha beta design_matrix
+    weights = beta .* inv_hessian <> trans design_matrix <> targets
 
 -- | Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the origin.  The precision
 -- of the weight prior is controlled by the parameter alpha, and our belief about the inherent noise in the data is
@@ -114,10 +114,10 @@ regressBayesianLinearModel
     -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
 regressBayesianLinearModel alpha beta basis_fns ds
   = (LinearModel { lm_basis_fns = basis_fns, lm_weights = weights },
-     BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta })
+     BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_inv_hessian = inv_hessian, bvm_beta = beta })
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
-    (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
+    (weights, inv_hessian) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
 
 -- | Evidence-maximising Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the
 -- origin.  The precision of the weight prior is controlled by the parameter alpha, and our belief about the inherent
@@ -142,6 +142,7 @@ regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
     n = fromIntegral $ dataSetSize ds
     
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
+    -- The unscaled eigenvalues will be positive because phi ^ T * phi is positive definite.
     (unscaled_eigenvalues, _) = eigSH (trans design_matrix <> design_matrix)
     
     loopWorker alpha beta = (n - gamma, gamma)
@@ -194,10 +195,10 @@ convergeOnEMBayesianLinearModel loop_worker design_matrix initial_alpha initial_
   = loop eps initial_alpha initial_beta False
   where
     loop threshold alpha beta done
-      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, gamma)
+      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_inv_hessian = inv_hessian, bvm_beta = beta }, gamma)
       | otherwise = loop (threshold * 2) alpha' beta' (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
       where
-        (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
+        (weights, inv_hessian) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
         linear_model = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
         
         (beta_numerator, gamma) = loop_worker alpha beta

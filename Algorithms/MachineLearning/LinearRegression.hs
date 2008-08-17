@@ -137,26 +137,18 @@ regressEMBayesianLinearModel
     -> Precision -- ^ Initial estimate for precision of noise on samples
     -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
-  = loop initial_alpha initial_beta eps False
+  = convergeOnEMBayesianLinearModel loopWorker design_matrix initial_alpha initial_beta basis_fns ds
   where
     n = fromIntegral $ dataSetSize ds
     
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
     (unscaled_eigenvalues, _) = eigSH (trans design_matrix <> design_matrix)
     
-    loop alpha beta threshold done
-      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, gamma)
-      | otherwise = loop alpha' beta' (threshold * 2) (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
+    loopWorker alpha beta = (n - gamma, gamma)
       where
-        (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
-        linear_model = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
-        
         -- We save computation by calculating eigenvalues once for the design matrix and rescaling each iteration
         eigenvalues = beta .* unscaled_eigenvalues
         gamma = vectorSum (eigenvalues / (addConstant alpha eigenvalues))
-        
-        alpha' = gamma / (weights <.> weights)
-        beta' = (n - gamma) / modelSumSquaredError linear_model ds
 
 -- | Evidence-maximising Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the
 -- origin.  The precision of the weight prior is controlled by the parameter alpha, and our belief about the inherent
@@ -178,20 +170,37 @@ regressFullyDeterminedEMBayesianLinearModel
     -> Precision -- ^ Initial estimate for precision of noise on samples
     -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
-  = loop initial_alpha initial_beta eps False
+  = convergeOnEMBayesianLinearModel loopWorker design_matrix initial_alpha initial_beta basis_fns ds
   where
     n = fromIntegral $ dataSetSize ds
     m = fromIntegral $ length basis_fns
     
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
     
-    -- I'm not very happy about all the duplicate code around here.. is there a better way, without too much extra ugliness?
-    loop alpha beta threshold done
-      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, m)
-      | otherwise = loop alpha' beta' (threshold * 2) (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
+    -- In the limit n >> m, n - gamma = n, so we use that as the beta numerator
+    -- We assume all paramaters are determined because n >> m, so we return m as gamma
+    loopWorker _ _ = (n, m)
+    
+convergeOnEMBayesianLinearModel
+    :: (Vectorable input)
+    => (Precision -> Precision -> (Double, EffectiveNumberOfParameters)) -- ^ Loop worker: given alpha and beta, return new beta numerator and gamma
+    -> Matrix Double        -- ^ Design matrix
+    -> Precision            -- ^ Initial alpha
+    -> Precision            -- ^ Initial beta
+    -> [input -> Target]    -- ^ Basis functions
+    -> DataSet
+    -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
+convergeOnEMBayesianLinearModel loop_worker design_matrix initial_alpha initial_beta basis_fns ds
+  = loop eps initial_alpha initial_beta False
+  where
+    loop threshold alpha beta done
+      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, gamma)
+      | otherwise = loop (threshold * 2) alpha' beta' (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
       where
         (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
         linear_model = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
         
-        alpha' = m / (weights <.> weights)
-        beta' = n / modelSumSquaredError linear_model ds
+        (beta_numerator, gamma) = loop_worker alpha beta
+        
+        alpha' = gamma / (weights <.> weights)
+        beta' = beta_numerator / modelSumSquaredError linear_model ds

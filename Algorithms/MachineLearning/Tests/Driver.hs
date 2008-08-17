@@ -48,7 +48,7 @@ main = do
     
     -- Show some model statistics
     evaluate model used_data
-    print $ "Gamma = " ++ show gamma
+    putStrLn $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
     plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ predict variance_model]

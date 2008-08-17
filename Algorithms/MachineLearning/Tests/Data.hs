@@ -8,7 +8,7 @@ import Algorithms.MachineLearning.Framework
 --
 -- @
 --  input = U(0, 1)
---  target = sin(2πx) + N(0, 0.3)
+--  target = sin(2πx) + N(0, 0.09)
 -- @
 --
 -- Source: http://research.microsoft.com/~cmbishop/PRML/webdatasets/curvefitting.txt

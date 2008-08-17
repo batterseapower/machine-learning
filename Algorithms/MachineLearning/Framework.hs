@@ -16,7 +16,9 @@ import System.Random
 -- Ubiquitous synonyms for documentation purposes
 --
 
+-- | The target is the variable you wish to predict with your machine learning algorithm.
 type Target = Double
+
 type Weight = Double
 
 -- | Commonly called the "average" of a set of data.
@@ -28,14 +30,22 @@ type Variance = Double
 -- | Precision is the inverse of variance.
 type Precision = Double
 
--- | A positive constant indicating how strongly regularization should be applied. A good
+-- | A positive coefficient indicating how strongly regularization should be applied. A good
 -- choice for this parameter might be your belief about the variance of the inherent noise
 -- in the samples (1/beta) divided by your belief about the variance of the weights that
 -- should be learnt by the model (1/alpha).
 --
+-- Commonly written as lambda.
+--
 -- See also equation 3.55 and 3.28 in Bishop.
 type RegularizationCoefficient = Double
 
+-- | A positive number that indicates the number of fully determined parameters in a learnt
+-- model.  If all your parameters are determined, it will be equal to the number of parameters
+-- available, and if your data did not support any parameters it will be simply 0.
+--
+-- See also section 3.5.3 of Bishop.
+type EffectiveNumberOfParameters = Double
 
 --
 -- Injections to and from vectors

@@ -135,7 +135,7 @@ regressEMBayesianLinearModel
     :: (Vectorable input)
     => Precision -- ^ Initial estimate of Gaussian weight prior
     -> Precision -- ^ Initial estimate for precision of noise on samples
-    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, Double)
+    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = loop initial_alpha initial_beta eps False
   where

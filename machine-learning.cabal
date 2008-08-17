@@ -25,7 +25,7 @@ Library
         Exposed-Modules:        Algorithms.MachineLearning.Framework
                                 Algorithms.MachineLearning.LinearRegression
 
-        Build-Depends:          hmatrix >= 0.4.0.0
+        Build-Depends:          hmatrix >= 0.4.0.0, random >= 1.0.0.0
         if flag(splitBase)
                 Build-Depends:  base >= 3
         else
@@ -39,7 +39,7 @@ Executable machine-learning-tests
         
         -- I just need HTam for the GNUPlot module. Probably I should just write my
         -- own GNUPlot interface module instead of depending on such a weird package :-)
-        Build-Depends:          hmatrix >= 0.4.0.0, HTam
+        Build-Depends:          hmatrix >= 0.4.0.0, HTam, random >= 1.0.0.0
         if flag(splitBase)
                 Build-Depends:  base >= 3, process >= 1.0.0.0
         else

@@ -12,8 +12,8 @@ import Algorithms.MachineLearning.Framework
 -- @
 --
 -- Source: http://research.microsoft.com/~cmbishop/PRML/webdatasets/curvefitting.txt
-sinDataSet :: DataSet Double
-sinDataSet = dataSetFromSampleList [
+sinDataSet :: DataSet
+sinDataSet = dataSetFromSampleList ([
     (0.000000, 0.349486),
     (0.111111, 0.830839),
     (0.222222, 1.007332),
@@ -24,4 +24,4 @@ sinDataSet = dataSetFromSampleList [
     (0.777778, -0.445686),
     (0.888889, -0.563567),
     (1.000000, 0.261502)
-  ]
+  ] :: [(Double, Double)])

@@ -2,6 +2,12 @@
 -- home in a "utilities" module
 module Algorithms.MachineLearning.Utilities where
 
+import Data.List
+import Data.Ord
+
+import System.Random
+
+
 square :: Num a => a -> a
 square x = x * x
 
@@ -19,3 +25,12 @@ onLeft f (x, y) = (f x, y)
 
 onRight :: (b -> c) -> (a, b) -> (a, c)
 onRight f (x, y) = (x, f y)
+
+shuffle :: StdGen -> [a] -> [a]
+shuffle gen xs = map snd $ sortBy (comparing fst) (zip (randoms gen :: [Double]) xs)
+
+chunk :: Int -> [a] -> [[a]]
+chunk _ [] = []
+chunk n xs = this : chunk n rest
+  where
+    (this, rest) = splitAt n xs

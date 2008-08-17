@@ -4,8 +4,13 @@
 -- the machine learning algorithms.
 module Algorithms.MachineLearning.Framework where
 
+import Algorithms.MachineLearning.Utilities
+
 import Numeric.LinearAlgebra
 
+import Data.List
+
+import System.Random
 
 --
 -- Ubiquitous synonyms for documentation purposes
@@ -55,20 +60,26 @@ instance Vectorable (Vector Double) where
 -- Labelled data set
 --
 
-data DataSet input = DataSet {
+data DataSet = DataSet {
         ds_inputs :: Matrix Double, -- One row per sample, one column per input variable
         ds_targets :: Vector Target -- One row per sample, each value being a single target variable
     }
 
-dataSetFromSampleList :: Vectorable a => [(a, Target)] -> DataSet a
+dataSetFromSampleList :: Vectorable a => [(a, Target)] -> DataSet
 dataSetFromSampleList elts
   = DataSet {
     ds_inputs = fromRows $ map (toVector . fst) elts,
     ds_targets = fromList $ map snd elts
   }
 
-dataSetToSampleList :: Vectorable a => DataSet a -> [(a, Target)]
+dataSetToSampleList :: Vectorable a => DataSet -> [(a, Target)]
 dataSetToSampleList ds = zip (map fromVector $ toRows $ ds_inputs ds) (toList $ ds_targets ds)
+
+binDS :: StdGen -> Int -> DataSet -> [DataSet]
+binDS gen bins ds = map dataSetFromSampleList $ chunk (ceiling $ (fromIntegral $ length samples :: Double) / (fromIntegral bins)) shuffled_samples
+  where
+    samples = zip (toRows $ ds_inputs ds) (toList $ ds_targets ds)
+    shuffled_samples = shuffle gen samples
 
 --
 -- Models

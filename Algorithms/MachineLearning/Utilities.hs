@@ -34,3 +34,6 @@ chunk _ [] = []
 chunk n xs = this : chunk n rest
   where
     (this, rest) = splitAt n xs
+
+eqWithin :: Double -> Double -> Double -> Bool
+eqWithin jitter left right = abs (left - right) < jitter

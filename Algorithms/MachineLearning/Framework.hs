@@ -65,15 +65,21 @@ data DataSet = DataSet {
         ds_targets :: Vector Target -- One row per sample, each value being a single target variable
     }
 
-dataSetFromSampleList :: Vectorable a => [(a, Target)] -> DataSet
+dataSetFromSampleList :: Vectorable input => [(input, Target)] -> DataSet
 dataSetFromSampleList elts
   = DataSet {
     ds_inputs = fromRows $ map (toVector . fst) elts,
     ds_targets = fromList $ map snd elts
   }
 
-dataSetToSampleList :: Vectorable a => DataSet -> [(a, Target)]
-dataSetToSampleList ds = zip (map fromVector $ toRows $ ds_inputs ds) (toList $ ds_targets ds)
+dataSetToSampleList :: Vectorable input => DataSet -> [(input, Target)]
+dataSetToSampleList ds = zip (dataSetInputs ds) (dataSetTargets ds)
+
+dataSetInputs :: Vectorable input => DataSet -> [input]
+dataSetInputs ds = map fromVector $ toRows $ ds_inputs ds
+
+dataSetTargets :: DataSet -> [Target]
+dataSetTargets ds = toList $ ds_targets ds
 
 binDS :: StdGen -> Int -> DataSet -> [DataSet]
 binDS gen bins ds = map dataSetFromSampleList $ chunk (ceiling $ (fromIntegral $ length samples :: Double) / (fromIntegral bins)) shuffled_samples
@@ -87,3 +93,8 @@ binDS gen bins ds = map dataSetFromSampleList $ chunk (ceiling $ (fromIntegral $
 
 class Model model where
     predict :: Vectorable input => model input -> input -> Target
+
+modelSumSquaredError :: (Model model, Vectorable input) => model input -> DataSet -> Double
+modelSumSquaredError model ds = error_vector <.> error_vector
+  where
+    error_vector = ds_targets ds - fromList (map (predict model) (dataSetInputs ds))

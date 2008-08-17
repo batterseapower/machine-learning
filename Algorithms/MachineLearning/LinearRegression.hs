@@ -3,11 +3,13 @@
 -- | Linear regression models, as discussed in chapter 3 of Bishop.
 module Algorithms.MachineLearning.LinearRegression (
         LinearModel,
-        regressLinearModel, regressRegularizedLinearModel, bayesianLinearRegression
+        regressLinearModel, regressRegularizedLinearModel, regressBayesianLinearModel,
+        regressEMBayesianLinearModel, regressFullyDeterminedEMBayesianLinearModel
     ) where
 
 import Algorithms.MachineLearning.Framework
 import Algorithms.MachineLearning.LinearAlgebra
+import Algorithms.MachineLearning.Utilities
 
 
 data LinearModel input = LinearModel {
@@ -65,7 +67,8 @@ regularizedPrePinv alpha beta phi = inv $ (alpha .* (ident (cols phi))) + (beta 
 -- is also very quick to find, since there is a closed form solution.
 --
 -- Equation 3.15 in Bishop.
-regressLinearModel :: (Vectorable input) => [input -> Target] -> DataSet -> LinearModel input
+regressLinearModel
+    :: (Vectorable input) => [input -> Target] -> DataSet -> LinearModel input
 regressLinearModel basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
@@ -80,11 +83,20 @@ regressLinearModel basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_wei
 -- the weight vector.  Like 'regressLinearModel', a closed form solution is used to find the model quickly.
 --
 -- Equation 3.28 in Bishop.
-regressRegularizedLinearModel :: (Vectorable input) => RegularizationCoefficient -> [input -> Target] -> DataSet -> LinearModel input
+regressRegularizedLinearModel
+    :: (Vectorable input) => RegularizationCoefficient -> [input -> Target] -> DataSet -> LinearModel input
 regressRegularizedLinearModel lambda basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
     weights = regularizedPinv lambda design_matrix <> ds_targets ds
+
+
+-- | Determine the mean weight and weight covariance matrix given alpha, beta, the design matrix and the targets.
+bayesianPosteriorParameters :: Precision -> Precision -> Matrix Double -> Vector Double -> (Vector Double, Matrix Double)
+bayesianPosteriorParameters alpha beta design_matrix targets = (weights, weight_covariance)
+  where
+    weight_covariance = regularizedPrePinv alpha beta design_matrix
+    weights = beta .* weight_covariance <> trans design_matrix <> targets
 
 -- | Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the origin.  The precision
 -- of the weight prior is controlled by the parameter alpha, and our belief about the inherent noise in the data is
@@ -95,14 +107,90 @@ regressRegularizedLinearModel lambda basis_fns ds = LinearModel { lm_basis_fns =
 -- for the variance of the true value about any input point.
 --
 -- Equations 3.53, 3.54 and 3.59 in Bishop.
-bayesianLinearRegression :: (Vectorable input) 
-                         => Precision -- ^ Precision of Gaussian weight prior
-                         -> Precision -- ^ Precision of noise on samples
-                         -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
-bayesianLinearRegression alpha beta basis_fns ds
+regressBayesianLinearModel
+    :: (Vectorable input)
+    => Precision -- ^ Precision of Gaussian weight prior
+    -> Precision -- ^ Precision of noise on samples
+    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
+regressBayesianLinearModel alpha beta basis_fns ds
   = (LinearModel { lm_basis_fns = basis_fns, lm_weights = weights },
      BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta })
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
-    weight_covariance = regularizedPrePinv alpha beta design_matrix
-    weights = beta .* weight_covariance <> trans design_matrix <> (ds_targets ds)
+    (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
+
+-- | Evidence-maximising Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the
+-- origin.  The precision of the weight prior is controlled by the parameter alpha, and our belief about the inherent
+-- noise in the data is controlled by the precision parameter beta.
+--
+-- This is similar to 'bayesianLinearRegression', but rather than just relying on the supplied values for alpha and beta
+-- an iterative procedure is used to try and find values that are best supported by the supplied training data.  This is
+-- an excellent way of finding a reasonable trade-off between over-fitting of the training set with a complex model and
+-- accuracy of the model.
+--
+-- As a bonus, this function returns gamma, the effective number of parameters used by the regressed model.
+--
+-- Equations 3.87, 3.92 and 3.95 in Bishop.
+regressEMBayesianLinearModel
+    :: (Vectorable input)
+    => Precision -- ^ Initial estimate of Gaussian weight prior
+    -> Precision -- ^ Initial estimate for precision of noise on samples
+    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, Double)
+regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
+  = loop initial_alpha initial_beta eps False
+  where
+    n = fromIntegral $ rows (ds_inputs ds) -- Number of samples
+    
+    design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
+    (unscaled_eigenvalues, _) = eigSH (trans design_matrix <> design_matrix)
+    
+    loop alpha beta threshold done
+      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta }, gamma)
+      | otherwise = loop alpha' beta' (threshold * 2) (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
+      where
+        (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
+        linear_model = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
+        
+        -- We save computation by calculating eigenvalues once for the design matrix and rescaling each iteration
+        eigenvalues = beta .* unscaled_eigenvalues
+        gamma = vectorSum (eigenvalues / (addConstant alpha eigenvalues))
+        
+        alpha' = gamma / (weights <.> weights)
+        beta' = (n - gamma) / modelSumSquaredError linear_model ds
+
+-- | Evidence-maximising Bayesian linear regression, using an isotropic Gaussian prior for the weights centred at the
+-- origin.  The precision of the weight prior is controlled by the parameter alpha, and our belief about the inherent
+-- noise in the data iscontrolled by the precision parameter beta.
+--
+-- This is similar to 'regressEMBayesianLinearModel', but suitable only for the situation where there is much more
+-- training data than there are basis functions you want to assign weights to.  Due to the introduction of this
+-- constraint, it is much faster than the other function and yet produces results of similar quality.
+--
+-- Unlike with 'regressEMBayesianLinearModel', the effective number of parameters, gamma, used by the regressed model
+-- is not returned because for this function to make sense you need to be sure that there is sufficient data that all
+-- the parameters are determined, i.e. gamma = number of basis functions.
+--
+-- Equations 3.98 and 3.99 in Bishop.
+regressFullyDeterminedEMBayesianLinearModel
+    :: (Vectorable input)
+    => Precision -- ^ Initial estimate of Gaussian weight prior
+    -> Precision -- ^ Initial estimate for precision of noise on samples
+    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
+regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
+  = loop initial_alpha initial_beta eps False
+  where
+    n = fromIntegral $ rows (ds_inputs ds) -- Number of samples
+    m = fromIntegral $ length basis_fns
+    
+    design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
+    
+    -- I'm not very happy about all the duplicate code around here.. is there a better way, without too much extra ugliness?
+    loop alpha beta threshold done
+      | done      = (linear_model, BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_weight_covariance = weight_covariance, bvm_beta = beta })
+      | otherwise = loop alpha' beta' (threshold * 2) (eqWithin threshold alpha alpha' && eqWithin threshold beta beta')
+      where
+        (weights, weight_covariance) = bayesianPosteriorParameters alpha beta design_matrix (ds_targets ds)
+        linear_model = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
+        
+        alpha' = m / (weights <.> weights)
+        beta' = n / modelSumSquaredError linear_model ds

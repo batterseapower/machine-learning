@@ -43,10 +43,11 @@ main :: IO ()
 main = do
     gen <- newStdGen
     let used_data = head $ binDS gen 2 sinDataSet
-        (model, variance_model) = bayesianLinearRegression 5 (1 / 0.3) basisFunctions used_data
+        (model, variance_model, gamma) = regressEMBayesianLinearModel 5 (1 / 0.3) basisFunctions used_data
     
     -- Show some model statistics
     evaluate model used_data
+    print $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
     plot [dataSetToSampleList used_data, sample $ predict model, sample $ predict variance_model]

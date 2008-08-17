@@ -28,11 +28,7 @@ sampleFunction f = map (\(x :: Rational) -> let x' = rationalToDouble x in (x', 
 evaluate :: (Model model, Show (model Double)) => model Double -> DataSet -> IO ()
 evaluate model true_data = do
     putStrLn $ "Target Mean = " ++ show (vectorMean (ds_targets true_data))
-    putStrLn $ "Error = " ++ show (sumOfSquaresError comparable_data)
-    putStrLn $ "Model:\n" ++ show model
-  where
-    fittedFunction = predict model
-    comparable_data = map (fittedFunction `onLeft`) (dataSetToSampleList true_data)
+    putStrLn $ "Error = " ++ show (modelSumSquaredError model true_data)
 
 plot :: [[(Double, Target)]] -> IO ()
 plot sampless = do
@@ -48,6 +44,8 @@ main = do
     
     -- Show some model statistics
     evaluate model used_data
+    putStrLn $ "Model For Target:\n" ++ show model
+    putStrLn $ "Model For Variance:\n" ++ show variance_model
     putStrLn $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model

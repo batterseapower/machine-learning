@@ -24,10 +24,10 @@ type Weight = Double
 -- | Commonly called the "average" of a set of data.
 type Mean = Double
 
--- | Variance is the mean squared deviation from the mean.
+-- | Variance is the mean squared deviation from the mean. Must be positive.
 type Variance = Double
 
--- | Precision is the inverse of variance.
+-- | Precision is the inverse of variance. Must be positive.
 type Precision = Double
 
 -- | A positive coefficient indicating how strongly regularization should be applied. A good

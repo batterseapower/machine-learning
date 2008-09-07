@@ -43,8 +43,9 @@ main = do
     gen <- newStdGen
     let --used_data = sinDataSet
         used_data = sampleDataSet gen 10 sinDataSet
-        --(model, variance_model) = regressBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
-        (model, variance_model, gamma) = regressEMBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
+        --model = regressLinearModel basisFunctions used_data
+        (model, variance_model) = regressBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
+        --(model, variance_model, gamma) = regressEMBayesianLinearModel 1 (1 / 0.09) basisFunctions used_data
     
     -- Show some model statistics
     evaluate model used_data
@@ -53,4 +54,4 @@ main = do
     --putStrLn $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
-    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ (sqrt . predict variance_model)]
+    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ (sqrt . predict variance_model)

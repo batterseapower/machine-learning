@@ -2,6 +2,7 @@
 -- the machine learning algorithms.
 module Algorithms.MachineLearning.Framework where
 
+import Algorithms.MachineLearning.LinearAlgebra
 import Algorithms.MachineLearning.Utilities
 
 import Numeric.LinearAlgebra
@@ -126,7 +127,7 @@ instance MetricSpace Double where
     distance x y = abs (x - y)
 
 instance MetricSpace (Vector Double) where
-    distance = (<.>)
+    distance x y = vectorSumSquares (x - y)
 
 --
 -- Models

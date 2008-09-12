@@ -56,6 +56,10 @@ applyVector fns inputs = fromList $ map ($ inputs) fns
 vectorSum :: Element a => Vector a -> a
 vectorSum v = constant 1 (dim v) <.> v
 
+-- | The sum of the squares of the elements of the vector
+vectorSumSquares :: Element a => Vector a -> a
+vectorSumSquares v = v <.> v
+
 -- | Mean of the elements in a vector.
 vectorMean :: Element a => Vector a -> a
 vectorMean v = (vectorSum v) / fromIntegral (dim v)

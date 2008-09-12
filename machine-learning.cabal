@@ -41,6 +41,8 @@ Library
                                 TypeSynonymInstances
                                 FlexibleInstances
                                 FlexibleContexts
+                                ExistentialQuantification
+                                ScopedTypeVariables
         Ghc-Options:            -O2 -fvia-C -Wall
 
 Executable machine-learning-tests
@@ -60,6 +62,8 @@ Executable machine-learning-tests
                                 TypeSynonymInstances
                                 FlexibleInstances
                                 FlexibleContexts
+                                ExistentialQuantification
+                                ScopedTypeVariables
         Ghc-Options:            -O2 -fvia-C -Wall
         
         if !flag(tests)

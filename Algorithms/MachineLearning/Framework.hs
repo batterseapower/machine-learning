@@ -133,10 +133,15 @@ instance MetricSpace (Vector Double) where
 -- Models
 --
 
-class (Vectorable input, Vectorable target) => Model model input target | model -> input target where
+class Model model input target | model -> input target where
     predict :: model -> input -> target
 
-modelSumSquaredError :: (Model model input target, MetricSpace target) => model -> DataSet input target -> Double
+data AnyModel input output = forall model. Model model input output => AnyModel { theModel :: model }
+
+instance Model (AnyModel input output) input output where
+    predict (AnyModel model) = predict model
+
+modelSumSquaredError :: (Model model input target, MetricSpace target, Vectorable input, Vectorable target) => model -> DataSet input target -> Double
 modelSumSquaredError model ds = sum [sample_error * sample_error | sample_error <- sample_errors]
   where
     sample_errors = zipWith (\x y -> x `distance` y) (dataSetTargets ds) (map (predict model) (dataSetInputs ds))

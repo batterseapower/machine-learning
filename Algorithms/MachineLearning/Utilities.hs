@@ -8,6 +8,12 @@ import Data.Ord
 import System.Random
 
 
+newtype K a = K { unK :: a }
+
+instance Functor K where
+    fmap f (K x) = K (f x)
+
+
 square :: Num a => a -> a
 square x = x * x
 

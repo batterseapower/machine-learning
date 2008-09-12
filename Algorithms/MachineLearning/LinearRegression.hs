@@ -1,5 +1,3 @@
-{-# LANGUAGE PatternSignatures #-}
-
 -- | Linear regression models, as discussed in chapter 3 of Bishop.
 module Algorithms.MachineLearning.LinearRegression (
         LinearModel,
@@ -12,22 +10,23 @@ import Algorithms.MachineLearning.LinearAlgebra
 import Algorithms.MachineLearning.Utilities
 
 
-data LinearModel input = LinearModel {
-        lm_basis_fns :: [input -> Target],
-        lm_weights   :: Vector Weight
+data LinearModel input target = LinearModel {
+        lm_basis_fns :: [input -> Double],
+        lm_weights   :: Matrix Weight -- One column per target variable,
+                                      -- one row per basis function output
     }
 
-instance Show (LinearModel input) where
+instance Show (LinearModel input target) where
     show model = "Weights: " ++ show (lm_weights model)
 
-instance Model LinearModel where
-    predict model input = (lm_weights model) <.> phi_app_x
+instance (Vectorable input, Vectorable target) => Model (LinearModel input target) input target where
+    predict model input = fromVector $ (trans $ lm_weights model) <> phi_app_x
       where
         phi_app_x = applyVector (lm_basis_fns model) input
 
 
 data BayesianVarianceModel input = BayesianVarianceModel {
-        bvm_basis_fns :: [input -> Target],
+        bvm_basis_fns :: [input -> Double],
         bvm_inv_hessian :: Matrix Weight, -- Equivalent to the weight distribution covariance matrix
         bvm_beta :: Precision
     }
@@ -36,13 +35,13 @@ instance Show (BayesianVarianceModel input) where
     show model = "Inverse Hessian: " ++ show (bvm_inv_hessian model) ++ "\n" ++
                  "Beta: " ++ show (bvm_beta model)
 
-instance Model BayesianVarianceModel where
-    predict model input = recip (bvm_beta model) + (phi_app_x <> bvm_inv_hessian model) <.> phi_app_x --phi_app_x <.> (bvm_inv_hessian model <> phi_app_x)
+instance (Vectorable input) => Model (BayesianVarianceModel input) input Variance where
+    predict model input = recip (bvm_beta model) + (phi_app_x <> bvm_inv_hessian model) <.> phi_app_x
       where
         phi_app_x = applyVector (bvm_basis_fns model) input
 
 
-regressDesignMatrix :: (Vectorable input) => [input -> Target] -> Matrix Double -> Matrix Double
+regressDesignMatrix :: (Vectorable input) => [input -> Double] -> Matrix Double -> Matrix Double
 regressDesignMatrix basis_fns inputs
   = applyMatrix (map (. fromVector) basis_fns) inputs -- One row per sample, one column per basis function
 
@@ -68,7 +67,7 @@ regularizedPrePinv alpha beta phi = inv $ (alpha .* (ident (cols phi))) + (beta 
 --
 -- Equation 3.15 in Bishop.
 regressLinearModel
-    :: (Vectorable input) => [input -> Target] -> DataSet -> LinearModel input
+    :: (Vectorable input) => [input -> Double] -> DataSet input target -> LinearModel input target
 regressLinearModel basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
@@ -84,7 +83,7 @@ regressLinearModel basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_wei
 --
 -- Equation 3.28 in Bishop.
 regressRegularizedLinearModel
-    :: (Vectorable input) => RegularizationCoefficient -> [input -> Target] -> DataSet -> LinearModel input
+    :: (Vectorable input) => RegularizationCoefficient -> [input -> Double] -> DataSet input target -> LinearModel input target
 regressRegularizedLinearModel lambda basis_fns ds = LinearModel { lm_basis_fns = basis_fns, lm_weights = weights }
   where
     design_matrix = regressDesignMatrix basis_fns (ds_inputs ds)
@@ -92,7 +91,7 @@ regressRegularizedLinearModel lambda basis_fns ds = LinearModel { lm_basis_fns =
 
 
 -- | Determine the mean weight and inverse hessian matrix given alpha, beta, the design matrix and the targets.
-bayesianPosteriorParameters :: Precision -> Precision -> Matrix Double -> Vector Double -> (Vector Double, Matrix Double)
+bayesianPosteriorParameters :: Precision -> Precision -> Matrix Double -> Matrix Double -> (Matrix Double, Matrix Double)
 bayesianPosteriorParameters alpha beta design_matrix targets = (weights, inv_hessian)
   where
     inv_hessian = regularizedPrePinv alpha beta design_matrix
@@ -106,12 +105,16 @@ bayesianPosteriorParameters alpha beta design_matrix targets = (weights, inv_hes
 -- lambda = alpha / beta.  However, the twist is that we can use our knowledge of the prior to also make an estimate
 -- for the variance of the true value about any input point.
 --
+-- For the case of multiple target variables, this function makes the naive Bayesian assumption that the probability
+-- distributions on output variables are independent, and takes as an error metric the unweighted sum-squared error
+-- in all the targets. The variance model is common to all the target variables.
+--
 -- Equations 3.53, 3.54 and 3.59 in Bishop.
 regressBayesianLinearModel
     :: (Vectorable input)
     => Precision -- ^ Precision of Gaussian weight prior
     -> Precision -- ^ Precision of noise on samples
-    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input)
+    -> [input -> Double] -> DataSet input target -> (LinearModel input target, BayesianVarianceModel input)
 regressBayesianLinearModel alpha beta basis_fns ds
   = (LinearModel { lm_basis_fns = basis_fns, lm_weights = weights },
      BayesianVarianceModel { bvm_basis_fns = basis_fns, bvm_inv_hessian = inv_hessian, bvm_beta = beta })
@@ -130,12 +133,16 @@ regressBayesianLinearModel alpha beta basis_fns ds
 --
 -- As a bonus, this function returns gamma, the effective number of parameters used by the regressed model.
 --
+-- For the case of multiple target variables, this function makes the naive Bayesian assumption that the probability
+-- distributions on output variables are independent, and takes as an error metric the unweighted sum-squared error
+-- in all the targets. The variance model is common to all the target variables.
+--
 -- Equations 3.87, 3.92 and 3.95 in Bishop.
 regressEMBayesianLinearModel
-    :: (Vectorable input)
+    :: (Vectorable input, Vectorable target, MetricSpace target)
     => Precision -- ^ Initial estimate of Gaussian weight prior
     -> Precision -- ^ Initial estimate for precision of noise on samples
-    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
+    -> [input -> Double] -> DataSet input target -> (LinearModel input target, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = convergeOnEMBayesianLinearModel loopWorker design_matrix initial_alpha initial_beta basis_fns ds
   where
@@ -164,12 +171,16 @@ regressEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
 -- that all the parameters are determined, the returned gamma is always just the number of basis functions (and
 -- hence weights).
 --
+-- For the case of multiple target variables, this function makes the naive Bayesian assumption that the probability
+-- distributions on output variables are independent, and takes as an error metric the unweighted sum-squared error
+-- in all the targets. The variance model is common to all the target variables.
+--
 -- Equations 3.98 and 3.99 in Bishop.
 regressFullyDeterminedEMBayesianLinearModel
-    :: (Vectorable input)
+    :: (Vectorable input, Vectorable target, MetricSpace target)
     => Precision -- ^ Initial estimate of Gaussian weight prior
     -> Precision -- ^ Initial estimate for precision of noise on samples
-    -> [input -> Target] -> DataSet -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
+    -> [input -> Double] -> DataSet input target -> (LinearModel input target, BayesianVarianceModel input, EffectiveNumberOfParameters)
 regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns ds
   = convergeOnEMBayesianLinearModel loopWorker design_matrix initial_alpha initial_beta basis_fns ds
   where
@@ -183,14 +194,14 @@ regressFullyDeterminedEMBayesianLinearModel initial_alpha initial_beta basis_fns
     loopWorker _ _ = (n, m)
     
 convergeOnEMBayesianLinearModel
-    :: (Vectorable input)
+    :: (Vectorable input, Vectorable target, MetricSpace target)
     => (Precision -> Precision -> (Double, EffectiveNumberOfParameters)) -- ^ Loop worker: given alpha and beta, return new beta numerator and gamma
     -> Matrix Double        -- ^ Design matrix
     -> Precision            -- ^ Initial alpha
     -> Precision            -- ^ Initial beta
-    -> [input -> Target]    -- ^ Basis functions
-    -> DataSet
-    -> (LinearModel input, BayesianVarianceModel input, EffectiveNumberOfParameters)
+    -> [input -> Double]    -- ^ Basis functions
+    -> DataSet input target
+    -> (LinearModel input target, BayesianVarianceModel input, EffectiveNumberOfParameters)
 convergeOnEMBayesianLinearModel loop_worker design_matrix initial_alpha initial_beta basis_fns ds
   = loop eps initial_alpha initial_beta False
   where
@@ -203,5 +214,15 @@ convergeOnEMBayesianLinearModel loop_worker design_matrix initial_alpha initial_
         
         (beta_numerator, gamma) = loop_worker alpha beta
         
-        alpha' = gamma / (weights <.> weights)
+        -- This alpha computation is not the most efficient way to get the result, but it is idiomatic.
+        -- This is the modification to the algorithm in Bishop that generalises the result to the case
+        -- of multiple target variables, but to prove that this is the right thing to do I had to make the
+        -- naive Bayesian assumption.
+        --
+        -- The reason that this is correct because under naive Bayes:
+        --
+        --  dE(W)       K    T           T
+        -- ------- = \Sigma W * W = Tr (W * W)
+        -- d\alpha    k = 1  k   k
+        alpha' = gamma / (trace $ (trans weights) <> weights)
         beta' = beta_numerator / modelSumSquaredError linear_model ds

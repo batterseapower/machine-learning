@@ -36,6 +36,11 @@ Library
                 Build-Depends:  base < 3
         
         Extensions:             PatternSignatures
+                                MultiParamTypeClasses
+                                FunctionalDependencies
+                                TypeSynonymInstances
+                                FlexibleInstances
+                                FlexibleContexts
         Ghc-Options:            -O2 -fvia-C -Wall
 
 Executable machine-learning-tests
@@ -50,6 +55,11 @@ Executable machine-learning-tests
                 Build-Depends:  base < 3
         
         Extensions:             PatternSignatures
+                                MultiParamTypeClasses
+                                FunctionalDependencies
+                                TypeSynonymInstances
+                                FlexibleInstances
+                                FlexibleContexts
         Ghc-Options:            -O2 -fvia-C -Wall
         
         if !flag(tests)

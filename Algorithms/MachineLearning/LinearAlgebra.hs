@@ -67,3 +67,14 @@ sumColumns m = constant 1 (rows m) <> m
 -- | Create a constant matrix of the given dimension, analagously to 'constant'.
 constantM :: Element a => a -> Int -> Int -> Matrix a
 constantM elt row_count col_count = reshape row_count (constant elt (row_count * col_count))
+
+matrixToVector :: Element a => Matrix a -> Vector a
+matrixToVector m
+  | rows m == 1  -- Row vector
+  || cols m == 1 -- Column vector
+  = flatten m
+  | otherwise
+  = error "matrixToVector: matrix is neither a row or column vector"
+
+trace :: Element a => Matrix a -> a
+trace = vectorSum . takeDiag

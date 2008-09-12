@@ -28,9 +28,9 @@ sumOfSquaresError targetsAndPredictions = sum $ map (abs . uncurry (-)) targetsA
 sampleFunction :: (Double -> Double) -> [(Double, Double)]
 sampleFunction f = map (\(x :: Rational) -> let x' = rationalToDouble x in (x', f x')) [0,0.01..1.0]
 
-evaluate :: (Model model, Show (model Double)) => model Double -> DataSet -> IO ()
+evaluate :: (Model model Double Double, Show model) => model -> DataSet Double Double -> IO ()
 evaluate model true_data = do
-    putStrLn $ "Target Mean = " ++ show (vectorMean (ds_targets true_data))
+    putStrLn $ "Target Mean = " ++ show (vectorMean (head $ toRows $ ds_targets true_data))
     putStrLn $ "Error = " ++ show (modelSumSquaredError model true_data)
 
 plot :: [[(Double, Target)]] -> IO ()
@@ -54,4 +54,4 @@ main = do
     --putStrLn $ "Gamma = " ++ show gamma
     
     -- Show some graphical information about the model
-    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ (sqrt . predict variance_model)
+    plot [dataSetToSampleList used_data, sampleFunction $ predict model, sampleFunction $ (sqrt . predict variance_model)]

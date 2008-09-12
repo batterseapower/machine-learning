@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-
 -- | The "framework" provides all the core classes and types used ubiquitously by
 -- the machine learning algorithms.
 module Algorithms.MachineLearning.Framework where
@@ -70,50 +68,74 @@ instance Vectorable (Vector Double) where
 -- Labelled data set
 --
 
-data DataSet = DataSet {
+data DataSet input target = DataSet {
         ds_inputs :: Matrix Double, -- One row per sample, one column per input variable
-        ds_targets :: Vector Target -- One row per sample, each value being a single target variable
+        ds_targets :: Matrix Target -- One row per sample, one column per target variable
     }
 
-dataSetFromSampleList :: Vectorable input => [(input, Target)] -> DataSet
+dataSetFromSampleList :: (Vectorable input, Vectorable target) => [(input, target)] -> DataSet input target
 dataSetFromSampleList elts
   = DataSet {
     ds_inputs = fromRows $ map (toVector . fst) elts,
-    ds_targets = fromList $ map snd elts
+    ds_targets = fromRows $ map (toVector . snd) elts
   }
 
-dataSetToSampleList :: Vectorable input => DataSet -> [(input, Target)]
+dataSetToSampleList :: (Vectorable input, Vectorable target) => DataSet input target -> [(input, target)]
 dataSetToSampleList ds = zip (dataSetInputs ds) (dataSetTargets ds)
 
-dataSetInputs :: Vectorable input => DataSet -> [input]
+dataSetInputs :: Vectorable input => DataSet input target -> [input]
 dataSetInputs ds = map fromVector $ toRows $ ds_inputs ds
 
-dataSetTargets :: DataSet -> [Target]
-dataSetTargets ds = toList $ ds_targets ds
+dataSetTargets :: Vectorable target => DataSet input target -> [target]
+dataSetTargets ds = map fromVector $ toRows $ ds_targets ds
 
-dataSetInputLength :: DataSet -> Int
+dataSetInputLength :: DataSet input target -> Int
 dataSetInputLength ds = cols (ds_inputs ds)
 
-dataSetSize :: DataSet -> Int
+dataSetSize :: DataSet input target -> Int
 dataSetSize ds = rows (ds_inputs ds)
 
-binDataSet :: StdGen -> Int -> DataSet -> [DataSet]
-binDataSet gen bins ds = map dataSetFromSampleList $ chunk bin_size shuffled_samples
+binDataSet :: StdGen -> Int -> DataSet input target -> [DataSet input target]
+binDataSet gen bins = transformDataSetAsVectors binDataSet'
   where
-    shuffled_samples = shuffle gen (dataSetToSampleList ds :: [(Vector Double, Target)])
-    bin_size = ceiling $ (fromIntegral $ dataSetSize ds :: Double) / (fromIntegral bins)
+    binDataSet' ds = map dataSetFromSampleList $ chunk bin_size shuffled_samples
+      where
+        shuffled_samples = shuffle gen (dataSetToSampleList ds)
+        bin_size = ceiling $ (fromIntegral $ dataSetSize ds :: Double) / (fromIntegral bins)
 
-sampleDataSet :: StdGen -> Int -> DataSet -> DataSet
-sampleDataSet gen n ds = dataSetFromSampleList (sample gen n (dataSetToSampleList ds :: [(Vector Double, Target)]))
+sampleDataSet :: StdGen -> Int -> DataSet input target -> DataSet input target
+sampleDataSet gen n = unK . transformDataSetAsVectors (K . dataSetFromSampleList . sample gen n . dataSetToSampleList)
+
+transformDataSetAsVectors :: Functor f => (DataSet (Vector Double) (Vector Double) -> f (DataSet (Vector Double) (Vector Double))) -> DataSet input target -> f (DataSet input target)
+transformDataSetAsVectors transform input = fmap castDataSet (transform (castDataSet input))
+  where
+    castDataSet :: DataSet input1 target1 -> DataSet input2 target2
+    castDataSet ds = DataSet {
+          ds_inputs = ds_inputs ds,
+          ds_targets = ds_targets ds
+      }
+
+--
+-- Metric spaces
+--
+
+class MetricSpace a where
+    distance :: a -> a -> Double
+
+instance MetricSpace Double where
+    distance x y = abs (x - y)
+
+instance MetricSpace (Vector Double) where
+    distance = (<.>)
 
 --
 -- Models
 --
 
-class Model model where
-    predict :: Vectorable input => model input -> input -> Target
+class (Vectorable input, Vectorable target) => Model model input target | model -> input target where
+    predict :: model -> input -> target
 
-modelSumSquaredError :: (Model model, Vectorable input) => model input -> DataSet -> Double
-modelSumSquaredError model ds = error_vector <.> error_vector
+modelSumSquaredError :: (Model model input target, MetricSpace target) => model -> DataSet input target -> Double
+modelSumSquaredError model ds = sum [sample_error * sample_error | sample_error <- sample_errors]
   where
-    error_vector = ds_targets ds - fromList (map (predict model) (dataSetInputs ds))
+    sample_errors = zipWith (\x y -> x `distance` y) (dataSetTargets ds) (map (predict model) (dataSetInputs ds))

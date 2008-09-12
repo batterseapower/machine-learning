@@ -1,6 +1,6 @@
 -- | Linear regression models, as discussed in chapter 3 of Bishop.
 module Algorithms.MachineLearning.LinearRegression (
-        LinearModel,
+        LinearModel, BayesianVarianceModel,
         regressLinearModel, regressRegularizedLinearModel, regressBayesianLinearModel,
         regressEMBayesianLinearModel, regressFullyDeterminedEMBayesianLinearModel
     ) where

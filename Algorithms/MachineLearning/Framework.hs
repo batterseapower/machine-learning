@@ -74,6 +74,9 @@ data DataSet input target = DataSet {
         ds_targets :: Matrix Target -- One row per sample, one column per target variable
     }
 
+fmapDataSetTarget :: (Vectorable input, Vectorable target, Vectorable target') => (target -> target') -> DataSet input target -> DataSet input target'
+fmapDataSetTarget f = dataSetFromSampleList . fmap (fmap f) . dataSetToSampleList
+
 dataSetFromSampleList :: (Vectorable input, Vectorable target) => [(input, target)] -> DataSet input target
 dataSetFromSampleList elts
   = DataSet {

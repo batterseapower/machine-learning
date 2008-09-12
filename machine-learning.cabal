@@ -24,6 +24,7 @@ Flag SplitBase
 Library
         Exposed-Modules:        Algorithms.MachineLearning.BasisFunctions
                                 Algorithms.MachineLearning.Framework
+                                Algorithms.MachineLearning.LinearClassification
                                 Algorithms.MachineLearning.LinearRegression
 
         Other-Modules:          Algorithms.MachineLearning.LinearAlgebra

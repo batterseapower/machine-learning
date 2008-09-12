@@ -46,3 +46,9 @@ sample gen n xs = take n (shuffle gen xs)
 
 eqWithin :: Double -> Double -> Double -> Bool
 eqWithin jitter left right = abs (left - right) < jitter
+
+enumAsList :: (Enum a, Bounded a) => [a]
+enumAsList = enumFromTo minBound maxBound
+
+enumSize :: (Enum a, Bounded a) => a -> Int
+enumSize what_enum = length (enumAsList `asTypeOf` [what_enum])

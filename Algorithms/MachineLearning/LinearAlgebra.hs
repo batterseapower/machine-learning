@@ -80,5 +80,5 @@ matrixToVector m
   | otherwise
   = error "matrixToVector: matrix is neither a row or column vector"
 
-trace :: Element a => Matrix a -> a
-trace = vectorSum . takeDiag
+matrixTrace :: Element a => Matrix a -> a
+matrixTrace = vectorSum . takeDiag

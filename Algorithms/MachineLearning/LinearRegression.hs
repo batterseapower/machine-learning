@@ -224,5 +224,5 @@ convergeOnEMBayesianLinearModel loop_worker design_matrix initial_alpha initial_
         --  dE(W)       K    T           T
         -- ------- = \Sigma W * W = Tr (W * W)
         -- d\alpha    k = 1  k   k
-        alpha' = gamma / (trace $ (trans weights) <> weights)
+        alpha' = gamma / (matrixTrace $ (trans weights) <> weights)
         beta' = beta_numerator / modelSumSquaredError linear_model ds

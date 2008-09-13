@@ -11,6 +11,7 @@ import Data.List
 
 import System.Random
 
+
 --
 -- Ubiquitous synonyms for documentation purposes
 --
@@ -74,12 +75,16 @@ data DataSet input target = DataSet {
         ds_targets :: Matrix Target -- One row per sample, one column per target variable
     }
 
+fmapDataSetInput :: (Vectorable input, Vectorable input', Vectorable target) => (input -> input') -> DataSet input target -> DataSet input' target
+fmapDataSetInput f = dataSetFromSampleList . fmap (onLeft f) . dataSetToSampleList
+
 fmapDataSetTarget :: (Vectorable input, Vectorable target, Vectorable target') => (target -> target') -> DataSet input target -> DataSet input target'
-fmapDataSetTarget f = dataSetFromSampleList . fmap (fmap f) . dataSetToSampleList
+fmapDataSetTarget f = dataSetFromSampleList . fmap (onRight f) . dataSetToSampleList
 
 dataSetFromSampleList :: (Vectorable input, Vectorable target) => [(input, target)] -> DataSet input target
 dataSetFromSampleList elts
-  = DataSet {
+  | null elts = error "dataSetFromSampleList: no data supplied"
+  | otherwise = DataSet {
     ds_inputs = fromRows $ map (toVector . fst) elts,
     ds_targets = fromRows $ map (toVector . snd) elts
   }

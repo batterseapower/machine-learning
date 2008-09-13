@@ -31,7 +31,7 @@ regressLinearClassificationModel basis_fns ds = DiscriminantModel { dm_class_mod
   where
     class_models = AnyModel $ regressLinearModel basis_fns (fmapDataSetTarget classToCharacteristicVector ds)
     indexed_classes = enumAsList `zip` [0..]
-    classToCharacteristicVector the_class = fromList $ replicate (index - 1) 0 ++ [1] ++ replicate (size - index - 1) 0
+    classToCharacteristicVector the_class = fromList $ replicate index 0 ++ [1] ++ replicate (size - index - 1) 0
       where
         size = enumSize the_class
         index = fromJust $ lookup the_class indexed_classes

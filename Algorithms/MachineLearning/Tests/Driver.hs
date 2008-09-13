@@ -24,7 +24,9 @@ basisFunctions
   -- = gaussianBasisFamily (map rationalToDouble [-1,-0.9..1]) 0.04
 
 basisFunctions2D :: [(Double, Double) -> Double]
-basisFunctions2D = map ((. \(x, y) -> fromList [x, y])) $ multivariateIsotropicGaussianBasisFamily [fromList [x, y] | x <- range, y <- range] 0.1
+basisFunctions2D 
+  = [\(x, _) -> x, \(_, y) -> y]
+  -- = map ((. \(x, y) -> fromList [x, y])) $ multivariateIsotropicGaussianBasisFamily [fromList [x, y] | x <- range, y <- range] 0.1
   where range = map rationalToDouble [-1,-0.8..1]
 
 sampleFunction :: (Double -> a) -> [(Double, a)]
